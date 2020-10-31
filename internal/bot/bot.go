@@ -14,10 +14,19 @@ type Bot struct {
 	tb *telebot.Bot
 }
 
-func New(token string) (*Bot, error) {
+func New(token string, whitelist []string) (*Bot, error) {
+	poller := &telebot.LongPoller{Timeout: 10 * time.Second}
+
+	authPoller := telebot.NewMiddlewarePoller(poller, func(upd *telebot.Update) bool {
+		if upd.Message == nil {
+			return true
+		}
+		return isWhitelisted(upd.Message.Sender.Username, whitelist)
+	})
+
 	tb, err := telebot.NewBot(telebot.Settings{
 		Token:  token,
-		Poller: &telebot.LongPoller{Timeout: 10 * time.Second},
+		Poller: authPoller,
 	})
 
 	if err != nil {
@@ -49,4 +58,14 @@ func (b *Bot) takePhoto(m *telebot.Message) {
 
 	img := &telebot.Photo{File: telebot.FromDisk(imagePath)}
 	b.tb.Send(m.Sender, img)
+}
+
+func isWhitelisted(username string, whitelist []string) bool {
+	for _, whitelisted := range whitelist {
+		if username == whitelisted {
+			return true
+		}
+	}
+	log.Printf("unauthenticated user %s", username)
+	return false
 }
