@@ -12,6 +12,7 @@ import (
 func main() {
 	token := flag.String("token", "", "Telegram API token")
 	whitelistStr := flag.String("whitelist", "", "Telegram user whiltelist")
+	imagesDir := flag.String("images", "", "Directory to store images")
 	flag.Parse()
 
 	if *token == "" {
@@ -26,7 +27,11 @@ func main() {
 
 	whitelist := strings.Split(*whitelistStr, ",")
 
-	b, err := bot.New(*token, whitelist)
+	b, err := bot.New(bot.Settings{
+		TelegramToken: *token,
+		UserWhitelist: whitelist,
+		ImagesDir:     *imagesDir,
+	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error running the bot: %s", err)
 		os.Exit(1)
